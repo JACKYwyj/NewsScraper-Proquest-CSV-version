@@ -1,0 +1,44 @@
+name: Build Mac App
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # 强制使用 macOS 13 (Intel 架构)
+    runs-on: macos-13
+
+    steps:
+    - uses: actions/checkout@v3
+
+    # 步骤：检查当前服务器架构 (用于排错)
+    - name: Check System Architecture
+      run: |
+        echo "当前服务器 CPU 架构:"
+        uname -m
+        # 如果这里输出 x86_64，说明环境是正确的 Intel 环境
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build with PyInstaller
+      run: |
+        # 添加 --clean 清理缓存
+        # 将生成的软件改名为 NewsScraper_Intel_Mac 以便区分
+        pyinstaller --noconfirm --onefile --console --clean --name="NewsScraper_Intel_Mac" news_scraper_v3.py
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        # Artifact 压缩包也改个名
+        name: Mac-Intel-Version-App
+        path: dist/NewsScraper_Intel_Mac

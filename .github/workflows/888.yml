@@ -1,0 +1,38 @@
+name: Build Mac App
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    # 使用默认的最新环境 (目前是 ARM/M1 架构)
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        # 【重要】删除了 architecture: 'x64'
+        # 我们使用原生 ARM Python 来运行，避免报错，然后靠 PyInstaller 生成通用版
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Build Universal Binary
+      run: |
+        # 【核心修改】添加 --target-arch universal2
+        # 这会生成一个既能跑在 Intel 也能跑在 M1 上的“双核”程序
+        pyinstaller --noconfirm --onefile --console --clean --target-arch universal2 --name="NewsScraper_Universal" news_scraper_v3.py
+
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: Mac-Universal-App
+        path: dist/NewsScraper_Universal
